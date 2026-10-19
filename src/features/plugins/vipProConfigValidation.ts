@@ -29,6 +29,8 @@ const privateHost = (host: string) => {
   if (a === 10 || a === 127) return true;
   if (a === 192 && b === 168) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
+  // RFC 6598 CGNAT, including Tailscale 100.64.0.0/10.
+  if (a === 100 && b >= 64 && b <= 127) return true;
   return false;
 };
 

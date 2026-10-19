@@ -1742,7 +1742,7 @@
     "invalid_enum": "請選擇宣告的枚舉值",
     "ch_relay_vippro": {
       "errors": {
-        "base_url": "請輸入 https 位址；只有 localhost 和內網 IP 可以使用 http。不要包含使用者名稱、查詢參數或片段。",
+        "base_url": "請輸入 https 位址；只有 localhost、內網 IP 和共享位址 100.64.0.0/10（Tailscale）可以使用 http。不要包含使用者名稱、查詢參數或片段。",
         "prefix": "前綴不能包含斜線。",
         "headers": "標頭必須是 JSON 物件。不能設定 Authorization 或 Host。",
         "request_retry": "請輸入 0 到 32 的整數。留空則使用預設值 3。",
@@ -1760,7 +1760,7 @@
         },
         "base-url": {
           "label": "上游位址",
-          "hint": "相容 OpenAI 的位址。公開主機必須使用 HTTPS。只有 localhost 和內網 IP（例如 192.168.8.1）可以使用 HTTP。留空則使用內建預設位址。"
+          "hint": "相容 OpenAI 的位址。公開主機必須使用 HTTPS。只有 localhost、內網 IP（例如 192.168.8.1）和共享位址 100.64.0.0/10（Tailscale）可以使用 HTTP。留空則使用內建預設位址。"
         },
         "prefix": {
           "label": "模型前綴",

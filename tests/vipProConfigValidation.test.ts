@@ -4,6 +4,31 @@ import { validateChRelayVipPro } from '../src/features/plugins/vipProConfigValid
 const t = (key: string) => key;
 
 describe('ch-relay-vippro config validation', () => {
+  test('accepts tailscale shared http addresses', () => {
+    expect(
+      validateChRelayVipPro({ 'base-url': 'http://100.105.177.35:11500/v1' }, t)
+    ).toEqual({});
+    expect(validateChRelayVipPro({ 'base-url': 'http://100.63.255.255/v1' }, t)['base-url']).toContain(
+      'base_url'
+    );
+    expect(validateChRelayVipPro({ 'base-url': 'http://100.128.0.1/v1' }, t)['base-url']).toContain(
+      'base_url'
+    );
+    expect(validateChRelayVipPro({ 'base-url': 'http://100.64.0.0/v1' }, t)).toEqual({});
+    expect(validateChRelayVipPro({ 'base-url': 'http://100.127.255.255/v1' }, t)).toEqual({});
+    expect(validateChRelayVipPro({ 'base-url': 'https://example.com/v1' }, t)).toEqual({});
+    expect(validateChRelayVipPro({ 'base-url': 'https://100.86.237.127:11500/v1' }, t)).toEqual({});
+    expect(
+      validateChRelayVipPro({ 'base-url': 'http://user:pass@100.86.237.127:11500/v1' }, t)['base-url']
+    ).toContain('base_url');
+    expect(
+      validateChRelayVipPro({ 'base-url': 'http://100.86.237.127:11500/v1?q=1' }, t)['base-url']
+    ).toContain('base_url');
+    expect(
+      validateChRelayVipPro({ 'base-url': 'http://100.86.237.127:11500/v1#frag' }, t)['base-url']
+    ).toContain('base_url');
+  });
+
   test('accepts the live private http settings', () => {
     expect(
       validateChRelayVipPro(

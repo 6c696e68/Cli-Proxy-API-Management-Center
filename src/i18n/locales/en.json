@@ -1715,7 +1715,7 @@
     "invalid_enum": "Choose one of the declared enum values",
     "ch_relay_vippro": {
       "errors": {
-        "base_url": "Enter an https address, or http only for localhost and a private IP. Do not include a username, query, or fragment.",
+        "base_url": "Enter an https address, or http only for localhost, a private IP, and shared addresses in 100.64.0.0/10 (Tailscale). Do not include a username, query, or fragment.",
         "prefix": "The prefix cannot contain a slash.",
         "headers": "Headers must be a JSON object. Authorization and Host are not allowed.",
         "request_retry": "Enter a whole number from 0 to 32. Leave empty to use the default of 3.",
@@ -1733,7 +1733,7 @@
         },
         "base-url": {
           "label": "Upstream address",
-          "hint": "OpenAI-compatible base URL. Public hosts must use HTTPS. HTTP is allowed only for localhost and private IPs such as 192.168.8.1. Leave empty to use the built-in default."
+          "hint": "OpenAI-compatible base URL. Public hosts must use HTTPS. HTTP is allowed only for localhost, private IPs such as 192.168.8.1, and shared addresses such as 100.64.0.0/10 (Tailscale). Leave empty to use the built-in default."
         },
         "prefix": {
           "label": "Model prefix",
