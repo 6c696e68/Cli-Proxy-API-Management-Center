@@ -21,6 +21,7 @@ const goFields = [
   { Name: 'sticky-seconds', Type: 'integer' },
   { Name: 'stats-file', Type: 'string' },
   { Name: 'models', Type: 'array', Description: 'Custom models' },
+  { Name: 'model_access_mode', Type: 'enum', Default: 'full', EnumValues: ['full', 'custom'] },
 ];
 
 describe('plugin list config fields', () => {
@@ -51,12 +52,17 @@ describe('plugin list config fields', () => {
       'sticky-seconds',
       'stats-file',
       'models',
+      'model_access_mode',
     ]);
     expect(plugin?.configFields.find((field) => field.name === 'rotation-mode')).toMatchObject({
       type: 'enum',
       enumValues: ['round-robin', 'fill-first', 'least-recent', 'sticky'],
     });
     expect(plugin?.configFields.find((field) => field.name === 'models')?.type).toBe('array');
+    expect(plugin?.configFields.find((field) => field.name === 'model_access_mode')).toMatchObject({
+      type: 'enum',
+      defaultValue: 'full',
+    });
     expect(plugin?.metadata?.name).toBe('ch-relay-vippro');
   });
 
@@ -91,5 +97,14 @@ describe('plugin list config fields', () => {
     expect(rawArrayAt).toBeGreaterThan(modelsAt);
     expect(sheet).toContain('<PluginModelsEditor');
     expect(sheet).toContain('plugin.configFields.map');
+    expect(sheet).toContain(
+      "plugin.id === 'key-shop' && field.name === 'models' && draft.values.model_access_mode !== 'custom'"
+    );
+    const editor = readFileSync(
+      new URL('../src/features/plugins/PluginModelsEditor.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(editor).toContain("'gemini-interactions'");
+    expect(editor).not.toContain("'interactions'");
   });
 });

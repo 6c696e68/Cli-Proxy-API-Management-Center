@@ -1676,11 +1676,15 @@
         "headers": "Header phải là JSON object. Không được đặt Authorization hoặc Host.",
         "request_retry": "Nhập số nguyên từ 0 đến 32. Để trống sẽ dùng mặc định 3.",
         "fallback_retry": "Nhập số nguyên từ 0 đến 3. Để trống là không fallback.",
-        "sticky_seconds": "Nhập số nguyên từ 0 đến 86400. Để trống sẽ dùng mặc định 300.",
+        "sticky_seconds": "Nhập số nguyên từ 0 đến 86400. Để trống sẽ dùng mặc định 300. Plugin sẽ kẹp giá trị ngoài khoảng này.",
+        "model_cooldown": "Nhập số nguyên từ 0 đến 10080. Để trống sẽ dùng mặc định 1440.",
+        "stats_file": "Đường dẫn tệp thống kê không được chứa ký tự NUL.",
         "rotation": "Chọn một cách xoay tài khoản.",
         "plus": "Chọn off, prefer hoặc only.",
         "models": "Danh sách model không hợp lệ.",
-        "model_name": "Dòng có alias phải có tên model."
+        "model_name": "Dòng có alias phải có tên model.",
+        "free_models": "Model dùng tài khoản free phải là mảng JSON gồm tên model.",
+        "free_models_unknown": "Các model này không có trong danh sách model: {{names}}"
       },
       "fields": {
         "enabled": {
@@ -1701,7 +1705,7 @@
         },
         "request-retry": {
           "label": "Số lần đổi tài khoản",
-          "hint": "Số lần thử thêm, dùng chung khi đổi tài khoản và đổi tên model upstream. 0 là gửi một lần. Mặc định 3. Tối đa 32. Lỗi quá tải nằm trong phản hồi HTTP 200 cũng dùng ngân sách này để thử tài khoản kế tiếp."
+          "hint": "Số lần thử thêm trên tài khoản kế tiếp với cùng tên model upstream. 0 là gửi một lần. Mặc định 3. Tối đa 32. Tên model dự phòng dùng số lần fallback-retry, không dùng ngân sách này."
         },
         "fallback-retry": {
           "label": "Số lần đổi model dự phòng",
@@ -1726,6 +1730,12 @@
             "only": "Chỉ Plus"
           }
         },
+        "free-models": {
+          "label": "Model dùng tài khoản free",
+          "hint": "Tên model upstream được phép chạy cả trên tài khoản free và các tài khoản không phải Plus. Các model khác vẫn giữ ưu tiên Plus. Không có tác dụng khi tắt ưu tiên Plus.",
+          "empty": "Hãy thêm tên model trong mục Model trước, rồi chọn những model được phép chạy trên tài khoản free.",
+          "unknown": "không có trong danh sách model"
+        },
         "sticky-seconds": {
           "label": "Thời gian giữ phiên",
           "hint": "Số giây một phiên sticky giữ tài khoản đã thành công. Mặc định 300. Lỗi quá tải sẽ bỏ liên kết đó."
@@ -1737,6 +1747,22 @@
         "models": {
           "label": "Model",
           "hint": "Mỗi dòng là tên model upstream, alias tùy chọn và danh sách model dự phòng. Các dòng cùng alias thuộc một nhóm."
+        }
+      }
+    },
+    "key_shop": {
+      "fields": {
+        "model_access_mode": {
+          "label": "Model khách được phép",
+          "hint": "Chọn key khách ck_ được gọi mọi model hay chỉ model đã chọn.",
+          "options": {
+            "full": "Tất cả model",
+            "custom": "Chỉ model đã chọn"
+          }
+        },
+        "models": {
+          "label": "Model được phép",
+          "hint": "Tìm model, chọn tên upstream và đặt alias cho client nếu cần. Hậu tố thinking vẫn được giữ."
         }
       }
     }

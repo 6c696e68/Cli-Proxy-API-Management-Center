@@ -48,7 +48,10 @@ export function buildPluginConfigDraft(
   const values: PluginConfigDraft['values'] = {};
 
   plugin.configFields.forEach((field) => {
-    values[field.name] = getFieldDraftValue(field, currentConfig[field.name]);
+    values[field.name] = getFieldDraftValue(
+      field,
+      currentConfig[field.name] === undefined ? field.defaultValue : currentConfig[field.name]
+    );
   });
 
   return {

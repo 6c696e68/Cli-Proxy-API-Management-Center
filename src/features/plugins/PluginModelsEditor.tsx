@@ -37,14 +37,43 @@ async function pickCodexAuthIndex() {
   return chosen ? String(chosen.authIndex) : '';
 }
 
+const MODEL_DEFINITION_PROVIDERS = ['codex', 'gemini', 'claude', 'xai', 'meta', 'gemini-interactions'];
+
+async function fetchHostModelDefinitions(): Promise<ModelInfo[]> {
+  const responses = await Promise.allSettled(
+    MODEL_DEFINITION_PROVIDERS.map((provider) => authFilesApi.getModelDefinitions(provider))
+  );
+  const seen = new Set<string>();
+  return responses.flatMap((response) => {
+    if (response.status !== 'fulfilled') return [];
+    return response.value.reduce<ModelInfo[]>((models, item) => {
+      const name = String(item.id ?? '').trim();
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) return models;
+      seen.add(key);
+      models.push({ name });
+      return models;
+    }, []);
+  });
+}
+
 interface PluginModelsEditorProps {
   value: string;
   baseUrl: string;
   disabled: boolean;
   onChange: (value: string) => void;
+  hintKey?: string;
+  simple?: boolean;
 }
 
-export function PluginModelsEditor({ value, baseUrl, disabled, onChange }: PluginModelsEditorProps) {
+export function PluginModelsEditor({
+  value,
+  baseUrl,
+  disabled,
+  onChange,
+  hintKey = 'plugin_management.ch_relay_vippro.fields.models.hint',
+  simple = false,
+}: PluginModelsEditorProps) {
   const { t } = useTranslation();
   const syncRef = useRef<PluginModelsSyncState>(initialPluginModelsSync(value));
   const [models, setModels] = useState<ModelEntryInput[]>(() => modelsForEditorValue(value));
@@ -82,6 +111,12 @@ export function PluginModelsEditor({ value, baseUrl, disabled, onChange }: Plugi
     setLoading(true);
     setError(null);
     try {
+      if (simple) {
+        const next = await fetchHostModelDefinitions();
+        setDiscovered(next);
+        setHasFetched(true);
+        return;
+      }
       const endpoint = baseUrl.trim() || DEFAULT_BASE_URL;
       const authIndex = await pickCodexAuthIndex();
       const next = await modelsApi.fetchModelsViaApiCall(
@@ -113,7 +148,7 @@ export function PluginModelsEditor({ value, baseUrl, disabled, onChange }: Plugi
       defaultOpen
     >
       <div className={formStyles.entriesList}>
-        <p className={formStyles.labelHint}>{t('plugin_management.ch_relay_vippro.fields.models.hint')}</p>
+        <p className={formStyles.labelHint}>{t(hintKey)}</p>
         <div className={formStyles.entriesToolbar}>
           <button
             type="button"
@@ -143,7 +178,8 @@ export function PluginModelsEditor({ value, baseUrl, disabled, onChange }: Plugi
           models={models}
           supportsImage
           supportsThinking
-          showFallback
+          showFallback={!simple}
+          simple={simple}
           mutating={disabled}
           removeDisabled={models.length <= 1}
           onUpdate={(idx, patch) => commit(models.map((row, i) => (i === idx ? { ...row, ...patch } : row)))}

@@ -18,6 +18,8 @@ interface ModelEntriesEditorProps {
   supportsThinking: boolean;
   /** Plugin model rows can list upstream fallback names. */
   showFallback?: boolean;
+  /** Hide provider-specific model options for simple name/alias policies. */
+  simple?: boolean;
   mutating: boolean;
   removeDisabled: boolean;
   onUpdate: (idx: number, patch: Partial<ModelEntryInput>) => void;
@@ -32,6 +34,7 @@ export function ModelEntriesEditor({
   supportsImage,
   supportsThinking,
   showFallback = false,
+  simple = false,
   mutating,
   removeDisabled,
   onUpdate,
@@ -104,25 +107,27 @@ export function ModelEntriesEditor({
                     {t('providersPage.form.modelBadgeThinking')}
                   </span>
                 ) : null}
-                <button
-                  type="button"
-                  className={styles.entryCardIconBtn}
-                  onClick={() => setExpandedIdx(expanded ? null : idx)}
-                  title={expanded ? t('common.collapse') : t('common.expand')}
-                  aria-label={expanded ? t('common.collapse') : t('common.expand')}
-                  aria-expanded={expanded}
-                  disabled={mutating}
-                >
-                  <IconChevronDown
-                    className={[
-                      styles.entryCardChevron,
-                      expanded ? styles.entryCardChevronOpen : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    size={14}
-                  />
-                </button>
+                {!simple ? (
+                  <button
+                    type="button"
+                    className={styles.entryCardIconBtn}
+                    onClick={() => setExpandedIdx(expanded ? null : idx)}
+                    title={expanded ? t('common.collapse') : t('common.expand')}
+                    aria-label={expanded ? t('common.collapse') : t('common.expand')}
+                    aria-expanded={expanded}
+                    disabled={mutating}
+                  >
+                    <IconChevronDown
+                      className={[
+                        styles.entryCardChevron,
+                        expanded ? styles.entryCardChevronOpen : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      size={14}
+                    />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={styles.removeBtn}
@@ -152,7 +157,7 @@ export function ModelEntriesEditor({
                 </span>
               </label>
             ) : null}
-            {expanded ? (
+            {expanded && !simple ? (
               <div className={styles.modelEntryDetails}>
                 {!oauthAliasOnly && supportsImage ? (
                   <label className={styles.checkboxRow}>

@@ -59,11 +59,13 @@ const normalizeConfigField = (value: unknown): PluginConfigField | null => {
   const enumValues = Array.isArray(enumRaw)
     ? enumRaw.map((item) => asString(item)).filter(Boolean)
     : [];
+  const defaultValue = firstDefined(value, ['default', 'Default', 'default_value', 'defaultValue']);
   return {
     name,
     type: asString(firstDefined(value, ['type', 'Type'])).trim() || 'string',
     enumValues,
     description: asString(firstDefined(value, ['description', 'Description'])).trim(),
+    ...(defaultValue !== undefined ? { defaultValue } : {}),
   };
 };
 

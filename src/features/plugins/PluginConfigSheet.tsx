@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { Sheet } from '@/components/ui/Sheet';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { pluginsApi } from '@/services/api';
@@ -38,6 +39,51 @@ interface PluginConfigSheetProps {
 }
 
 const hasStatus = (error: unknown, status: number) => isRecord(error) && error.status === status;
+
+const parseModelsNames = (text: string): string[] => {
+  if (!text.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const names: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: unknown) => {
+    const name = typeof value === 'string' ? value.trim() : '';
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    names.push(name);
+  };
+  for (const row of parsed) {
+    if (!isRecord(row)) continue;
+    add(row.name);
+    if (Array.isArray(row.fallback)) row.fallback.forEach(add);
+  }
+  return names;
+};
+
+const parseFreeModelNames = (text: string): string[] | null => {
+  if (!text.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+  const names: string[] = [];
+  for (const item of parsed) {
+    const name = typeof item === 'string' ? item.trim() : '';
+    if (!name) return null;
+    names.push(name);
+  }
+  return names;
+};
 
 export function PluginConfigSheet({
   plugin,
@@ -240,8 +286,9 @@ export function PluginConfigSheet({
 
   const fieldCopy = (field: PluginConfigField) => {
     const fallback = { label: field.name, hint: field.description };
-    if (plugin?.id !== 'ch-relay-vippro') return fallback;
-    const base = `plugin_management.ch_relay_vippro.fields.${field.name}`;
+    if (plugin?.id !== 'ch-relay-vippro' && plugin?.id !== 'key-shop') return fallback;
+    const section = plugin.id === 'key-shop' ? 'key_shop' : 'ch_relay_vippro';
+    const base = `plugin_management.${section}.fields.${field.name}`;
     return {
       label: t(`${base}.label`, { defaultValue: field.name }),
       hint: t(`${base}.hint`, { defaultValue: field.description || '' }),
@@ -249,8 +296,9 @@ export function PluginConfigSheet({
   };
 
   const optionLabel = (field: PluginConfigField, value: string) => {
-    if (plugin?.id !== 'ch-relay-vippro') return value;
-    return t(`plugin_management.ch_relay_vippro.fields.${field.name}.options.${value}`, {
+    if (plugin?.id !== 'ch-relay-vippro' && plugin?.id !== 'key-shop') return value;
+    const section = plugin.id === 'key-shop' ? 'key_shop' : 'ch_relay_vippro';
+    return t(`plugin_management.${section}.fields.${field.name}.options.${value}`, {
       defaultValue: value,
     });
   };
@@ -303,13 +351,23 @@ export function PluginConfigSheet({
       );
     }
 
-    if (plugin.id === 'ch-relay-vippro' && field.name === 'models') {
+    if (plugin.id === 'key-shop' && field.name === 'models' && draft.values.model_access_mode !== 'custom') {
+      return null;
+    }
+
+    if ((plugin.id === 'ch-relay-vippro' || plugin.id === 'key-shop') && field.name === 'models') {
       return (
         <PluginModelsEditor
           key={field.name}
           value={textValue}
           baseUrl={typeof draft.values['base-url'] === 'string' ? draft.values['base-url'] : ''}
           disabled={saving}
+          hintKey={
+            plugin.id === 'key-shop'
+              ? 'plugin_management.key_shop.fields.models.hint'
+              : undefined
+          }
+          simple={plugin.id === 'key-shop'}
           onChange={(nextValue) =>
             updateDraft((current) => ({
               ...current,
@@ -322,7 +380,74 @@ export function PluginConfigSheet({
       );
     }
 
+    if (plugin.id === 'ch-relay-vippro' && field.name === 'free-models') {
+      const modelsText = typeof draft.values.models === 'string' ? draft.values.models : '';
+      const modelNames = parseModelsNames(modelsText);
+      const selectedNames = parseFreeModelNames(textValue);
+      if (modelNames.length > 0 && selectedNames) {
+        const selectedKeys = new Set(selectedNames.map((name) => name.toLowerCase()));
+        const knownKeys = new Set(modelNames.map((name) => name.toLowerCase()));
+        const choices = modelNames.map((name) => ({ name, known: true }));
+        const unknownKeys = new Set<string>();
+        selectedNames.forEach((name) => {
+          const key = name.toLowerCase();
+          if (knownKeys.has(key) || unknownKeys.has(key)) return;
+          unknownKeys.add(key);
+          choices.push({ name, known: false });
+        });
+        const toggle = (name: string, checked: boolean) => {
+          const key = name.toLowerCase();
+          updateDraft((current) => {
+            const currentText =
+              typeof current.values[field.name] === 'string'
+                ? (current.values[field.name] as string)
+                : '';
+            const next = (parseFreeModelNames(currentText) ?? []).filter(
+              (item) => item.toLowerCase() !== key
+            );
+            if (checked) next.push(name);
+            return {
+              ...current,
+              values: { ...current.values, [field.name]: JSON.stringify(next, null, 2) },
+              errors: { ...current.errors, [field.name]: '' },
+              touchedFields: { ...current.touchedFields, [field.name]: true },
+            };
+          });
+        };
+        return (
+          <div key={field.name} className={styles.formField}>
+            <div className={styles.fieldLabel}>{copy.label}</div>
+            <div>
+              {choices.map((choice) => (
+                <SelectionCheckbox
+                  key={choice.name}
+                  checked={selectedKeys.has(choice.name.toLowerCase())}
+                  onChange={(checked) => toggle(choice.name, checked)}
+                  disabled={saving}
+                  label={
+                    choice.known
+                      ? choice.name
+                      : `${choice.name} (${t(
+                          'plugin_management.ch_relay_vippro.fields.free-models.unknown'
+                        )})`
+                  }
+                  ariaLabel={choice.name}
+                />
+              ))}
+            </div>
+            {copy.hint ? <div className={styles.fieldHint}>{copy.hint}</div> : null}
+            {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
+          </div>
+        );
+      }
+    }
+
     if (fieldType === 'array' || fieldType === 'object') {
+      const freeModelsNeedsModels =
+        plugin.id === 'ch-relay-vippro' &&
+        field.name === 'free-models' &&
+        parseModelsNames(typeof draft.values.models === 'string' ? draft.values.models : '')
+          .length === 0;
       return (
         <div key={field.name} className={styles.formField}>
           <label htmlFor={`plugin-field-${field.name}`}>{copy.label}</label>
@@ -334,6 +459,11 @@ export function PluginConfigSheet({
             placeholder={fieldType === 'array' ? '[]' : '{}'}
             spellCheck={false}
           />
+          {freeModelsNeedsModels ? (
+            <div className={styles.fieldDescription}>
+              {t('plugin_management.ch_relay_vippro.fields.free-models.empty')}
+            </div>
+          ) : null}
           {copy.hint ? <div className={styles.fieldHint}>{copy.hint}</div> : null}
           {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
         </div>

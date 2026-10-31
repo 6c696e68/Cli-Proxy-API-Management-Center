@@ -73,4 +73,52 @@ describe('ch-relay-vippro config validation', () => {
     expect(errors['plus-preference']).toContain('plus');
     expect(errors.models).toContain('model_name');
   });
+
+  test('accepts uppercase enums and rejects cooldown and NUL stats paths', () => {
+    expect(validateChRelayVipPro({ 'plus-preference': 'ONLY', 'rotation-mode': 'Sticky' }, t)).toEqual(
+      {}
+    );
+    expect(validateChRelayVipPro({ 'model-cooldown-minutes': '' }, t)).toEqual({});
+    expect(
+      validateChRelayVipPro({ 'model-cooldown-minutes': '10081' }, t)['model-cooldown-minutes']
+    ).toContain('model_cooldown');
+    expect(validateChRelayVipPro({ 'stats-file': 'stats.json\u0000' }, t)['stats-file']).toContain(
+      'stats_file'
+    );
+  });
+
+  test('accepts free models that match model names and fallbacks', () => {
+    const models = '[{"name":"gpt-6-luna","fallback":["gpt-6-mini","GPT-6-LUNA"]}]';
+    expect(
+      validateChRelayVipPro({ models, 'free-models': '["gpt-6-mini","GPT-6-LUNA"]' }, t)
+    ).toEqual({});
+    expect(validateChRelayVipPro({ models, 'free-models': '' }, t)).toEqual({});
+    expect(validateChRelayVipPro({ models, 'free-models': '[]' }, t)).toEqual({});
+  });
+
+  test('rejects a free models value that is not an array of names', () => {
+    const models = '[{"name":"gpt-6-luna"}]';
+    expect(
+      validateChRelayVipPro({ models, 'free-models': '{"name":"gpt-6-luna"}' }, t)['free-models']
+    ).toContain('free_models');
+    expect(
+      validateChRelayVipPro({ models, 'free-models': 'not json' }, t)['free-models']
+    ).toContain('free_models');
+    expect(
+      validateChRelayVipPro({ models, 'free-models': '["gpt-6-luna",""]' }, t)['free-models']
+    ).toContain('free_models');
+  });
+
+  test('reports free models that are missing from the model list', () => {
+    const models = '[{"name":"gpt-6-luna","fallback":["gpt-6-mini"]}]';
+    const tWithNames = (key: string, options?: Record<string, unknown>) =>
+      options?.names ? `${key}:${String(options.names)}` : key;
+    const error = validateChRelayVipPro(
+      { models, 'free-models': '["gpt-6-mini","gpt-9-unknown"]' },
+      tWithNames
+    )['free-models'];
+    expect(error).toContain('free_models_unknown');
+    expect(error).toContain('gpt-9-unknown');
+    expect(error).not.toContain('gpt-6-mini');
+  });
 });
